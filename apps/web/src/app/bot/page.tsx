@@ -33,6 +33,26 @@ export default function BotPage() {
         <code>DocScoutBot</code> in your <code>robots.txt</code> — we check before every fetch.
       </p>
 
+      <h2>Where our list of practices comes from</h2>
+      <p>
+        Our roster of practices is built from Ontario open data: the Ministry of Health service
+        provider locations published by{" "}
+        <a href="https://geohub.lio.gov.on.ca/">Land Information Ontario</a> under the{" "}
+        <a href="https://www.ontario.ca/page/open-government-licence-ontario">
+          Open Government Licence &ndash; Ontario
+        </a>
+        , cross-checked against Statistics Canada&rsquo;s{" "}
+        <a href="https://www.statcan.gc.ca/en/lode/databases/odhf">
+          Open Database of Healthcare Facilities
+        </a>
+        . Neither Ontario nor Statistics Canada endorses Doc-Scout.
+      </p>
+      <p>
+        We do not scrape the CPSO Physician Register. Where we need physician practice details,
+        we request them through the College&rsquo;s own{" "}
+        <a href="https://www.cpso.on.ca/public/services/need-college-data">data request process</a>.
+      </p>
+
       <h2>Corrections and removal</h2>
       <p>
         If your listing is wrong, tell us and we will fix it. If you would rather not be listed

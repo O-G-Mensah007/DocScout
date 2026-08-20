@@ -61,11 +61,19 @@ Create a key at console.anthropic.com, set `ANTHROPIC_API_KEY`.
 ## Running the pipeline locally
 
 ```bash
+pnpm roster:load -- --catchment toronto-east --dry-run   # fetch + resolve, write nothing
 pnpm roster:load -- --catchment toronto-east
 pnpm crawl      -- --catchment toronto-east --limit 25
 pnpm extract    -- --catchment toronto-east
 pnpm audit:export -- --catchment toronto-east --n 100 > audit.csv
 ```
+
+`roster:load` fetches live from Ontario open data on every run and prints a
+`needs_review` count at the end; it exits non-zero above 10%. `--dry-run` needs
+no `DATABASE_URL`, which makes it the fastest way to check a matcher change.
+See `docs/04-roster.md`, and read
+`docs/adr/0003-roster-sources-and-entity-resolution.md` before adding a source
+— the CPSO register is deliberately not automated.
 
 `audit.csv` is the week-4 call sheet. Fill in `human_status`, then feed
 disagreements back as eval fixtures. That loop — disagreement becomes a
