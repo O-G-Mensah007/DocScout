@@ -50,6 +50,9 @@ export const practices = pgTable(
     type: practiceTypeEnum("type").notNull().default("other"),
 
     addressLine1: text("address_line1").notNull(),
+    /** Suite / unit, when the source separates it. Two practices routinely
+     *  share a street address and differ only here. */
+    addressLine2: text("address_line2"),
     city: text("city").notNull(),
     postal: text("postal").notNull(),
     lat: doublePrecision("lat"),
@@ -78,6 +81,32 @@ export const practices = pgTable(
     lastHumanCheck: timestamp("last_human_check", { withTimezone: true }),
     recheckDue: timestamp("recheck_due", { withTimezone: true }),
 
+    /**
+     * Layer 1 provenance. Which source rows were resolved into this practice,
+     * what each of them called it, and when they were read. This is the roster's
+     * equivalent of an evidence quote: a claim about who exists, with its
+     * receipts attached.
+     */
+    sourceRefs: jsonb("source_refs")
+      .$type<Array<{
+        source: string;
+        sourceId: string;
+        name: string;
+        sourceUrl: string;
+        retrievedAt: string;
+      }>>()
+      .notNull()
+      .default([]),
+    /** Entity-resolution confidence. 1 when nothing was merged. */
+    matchConfidence: doublePrecision("match_confidence"),
+    /**
+     * Set when the matcher found evidence it could not resolve. These practices
+     * are loaded and shown, never silently merged away; a human adjudicates.
+     */
+    needsReview: boolean("needs_review").notNull().default(false),
+    reviewReasons: jsonb("review_reasons").$type<string[]>().notNull().default([]),
+    rosterUpdatedAt: timestamp("roster_updated_at", { withTimezone: true }),
+
     // Invariant 6: delisting is a flag, honoured immediately by every read path.
     delistedAt: timestamp("delisted_at", { withTimezone: true }),
     crawlBlocked: boolean("crawl_blocked").notNull().default(false),
@@ -90,6 +119,7 @@ export const practices = pgTable(
     byStatus: index("practices_status_idx").on(t.currentStatus),
     byRecheck: index("practices_recheck_idx").on(t.recheckDue),
     byPostal: index("practices_postal_idx").on(t.postal),
+    byReview: index("practices_needs_review_idx").on(t.needsReview),
   }),
 );
 
