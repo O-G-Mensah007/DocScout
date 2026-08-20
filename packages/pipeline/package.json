@@ -1,0 +1,27 @@
+{
+  "name": "@docscout/pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc --build",
+    "roster:load": "tsx src/cli/roster-load.ts",
+    "crawl": "tsx src/cli/crawl.ts",
+    "extract": "tsx src/cli/extract.ts",
+    "audit:export": "tsx src/cli/audit-export.ts",
+    "eval": "tsx src/eval/run.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@docscout/core": "workspace:*",
+    "@docscout/db": "workspace:*",
+    "cheerio": "^1.0.0",
+    "drizzle-orm": "^0.38.2",
+    "robots-parser": "^3.0.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": { "tsx": "^4.19.2" }
+}

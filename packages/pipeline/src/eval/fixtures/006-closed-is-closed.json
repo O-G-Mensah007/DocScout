@@ -1,0 +1,18 @@
+{
+  "name": "006-closed-is-closed",
+  "practiceName": "Timmins Family Health Group",
+  "sourceUrl": "https://example.invalid/new-patients",
+  "pageText": "New Patients\n\nWe are not accepting new patients at this time. Please register with Health Care Connect by calling 811.",
+  "expected": { "status": "not_accepting" },
+  "candidate": {
+    "status": "not_accepting",
+    "conditions": { "geography": null, "referral_required": "hcc", "age": null, "provider_types": [], "notes": null },
+    "intake_method": "hcc",
+    "intake_url": null,
+    "intake_phone": "811",
+    "languages": [],
+    "evidence_quote": "We are not accepting new patients at this time.",
+    "confidence": 0.95,
+    "reasoning": "Explicit closure."
+  }
+}

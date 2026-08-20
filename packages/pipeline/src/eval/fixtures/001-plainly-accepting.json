@@ -1,0 +1,18 @@
+{
+  "name": "001-plainly-accepting",
+  "practiceName": "Example Family Health Team",
+  "sourceUrl": "https://example.invalid/new-patients",
+  "pageText": "New Patients\n\nWe are currently accepting new patients at our Danforth Avenue location. Please complete the registration form below and our office will contact you within two weeks.",
+  "expected": { "status": "accepting" },
+  "candidate": {
+    "status": "accepting",
+    "conditions": { "geography": null, "referral_required": null, "age": null, "provider_types": [], "notes": null },
+    "intake_method": "web_form",
+    "intake_url": "https://example.invalid/new-patients",
+    "intake_phone": null,
+    "languages": ["en"],
+    "evidence_quote": "We are currently accepting new patients at our Danforth Avenue location.",
+    "confidence": 0.94,
+    "reasoning": "Explicit present-tense statement of open intake."
+  }
+}

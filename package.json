@@ -1,0 +1,32 @@
+{
+  "name": "docscout",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Ontario Primary Care Capacity Index",
+  "packageManager": "pnpm@9.12.0",
+  "engines": { "node": ">=22.0.0" },
+  "scripts": {
+    "dev": "pnpm --filter @docscout/web dev",
+    "build": "pnpm --filter @docscout/web build",
+    "typecheck": "tsc --build && pnpm --filter @docscout/web typecheck",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "eval": "pnpm --filter @docscout/pipeline eval",
+    "db:generate": "pnpm --filter @docscout/db generate",
+    "db:migrate": "pnpm --filter @docscout/db migrate",
+    "db:studio": "pnpm --filter @docscout/db studio",
+    "roster:load": "pnpm --filter @docscout/pipeline roster:load",
+    "crawl": "pnpm --filter @docscout/pipeline crawl",
+    "extract": "pnpm --filter @docscout/pipeline extract",
+    "audit:export": "pnpm --filter @docscout/pipeline audit:export"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "eslint": "^9.17.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0",
+    "vitest": "^2.1.8"
+  }
+}

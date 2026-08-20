@@ -1,0 +1,19 @@
+node_modules/
+.next/
+dist/
+out/
+*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
+!.env.example
+
+.vercel/
+coverage/
+.DS_Store
+*.log
+
+# Local snapshot cache. Production snapshots live in Postgres / blob storage.
+.snapshots/
+data/local/

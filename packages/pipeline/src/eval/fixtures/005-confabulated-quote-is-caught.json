@@ -1,0 +1,18 @@
+{
+  "name": "005-confabulated-quote-is-caught",
+  "practiceName": "Parkdale Community Health Centre",
+  "sourceUrl": "https://example.invalid/",
+  "pageText": "Parkdale Community Health Centre\n\nWe offer primary care, counselling, and community programs to residents of south Parkdale. Our waitlist for new clients is currently closed.",
+  "expected": { "status": "unknown" },
+  "candidate": {
+    "status": "accepting",
+    "conditions": { "geography": "south Parkdale", "referral_required": null, "age": null, "provider_types": [], "notes": null },
+    "intake_method": "phone",
+    "intake_url": null,
+    "intake_phone": null,
+    "languages": [],
+    "evidence_quote": "We are welcoming new clients from the south Parkdale community.",
+    "confidence": 0.8,
+    "reasoning": "Quote does not appear on the page. The confabulation guard must catch this."
+  }
+}

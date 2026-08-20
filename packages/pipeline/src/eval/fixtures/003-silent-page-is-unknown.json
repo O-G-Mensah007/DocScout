@@ -1,0 +1,18 @@
+{
+  "name": "003-silent-page-is-unknown",
+  "practiceName": "Lakeshore Medical Centre",
+  "sourceUrl": "https://example.invalid/about",
+  "pageText": "About Our Clinic\n\nWe provide comprehensive family medicine, chronic disease management, and preventive care. Office hours are Monday to Friday, 9am to 5pm. To book an appointment, call the office or use our patient portal.",
+  "expected": { "status": "unknown" },
+  "candidate": {
+    "status": "unknown",
+    "conditions": { "geography": null, "referral_required": null, "age": null, "provider_types": [], "notes": null },
+    "intake_method": "unknown",
+    "intake_url": null,
+    "intake_phone": null,
+    "languages": [],
+    "evidence_quote": null,
+    "confidence": 0.2,
+    "reasoning": "Page describes services and booking for existing patients; says nothing about new-patient intake."
+  }
+}

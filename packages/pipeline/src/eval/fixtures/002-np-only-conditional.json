@@ -1,0 +1,24 @@
+{
+  "name": "002-np-only-conditional",
+  "practiceName": "Riverdale Family Health Organization",
+  "sourceUrl": "https://example.invalid/patients",
+  "pageText": "Becoming a Patient\n\nOur nurse practitioners are accepting new patients who live within our catchment area. Physician rosters are currently full. Registration is through Health Care Connect.",
+  "expected": { "status": "accepting_with_conditions" },
+  "candidate": {
+    "status": "accepting_with_conditions",
+    "conditions": {
+      "geography": "within catchment area",
+      "referral_required": "hcc",
+      "age": null,
+      "provider_types": ["np"],
+      "notes": "Physician rosters full; NP panels open."
+    },
+    "intake_method": "hcc",
+    "intake_url": null,
+    "intake_phone": null,
+    "languages": [],
+    "evidence_quote": "Our nurse practitioners are accepting new patients who live within our catchment area.",
+    "confidence": 0.88,
+    "reasoning": "Open, but restricted by provider type and geography."
+  }
+}
