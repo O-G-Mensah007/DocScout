@@ -47,7 +47,7 @@ Open http://localhost:3000.
 | `packages/core` | The record schema. Single source of truth, shared by DB and LLM |
 | `packages/db` | Drizzle schema, migrations, typed client |
 | `packages/pipeline` | roster → crawl → extract → freshness → eval |
-| `docs/` | Product spec, architecture, runbook, ADRs |
+| `docs/` | Product spec, architecture, runbook, ADRs, kickoff prompts |
 
 ## Deploying
 
