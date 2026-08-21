@@ -387,3 +387,121 @@ describe("resolveEntities", () => {
     expect(clusters[0]?.needsReview).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// The medical office building.
+//
+// Synthetic, and labelled as such: no open source we have carries a telephone
+// number, so this shape cannot yet be drawn from fetched data. It is modelled
+// on 1929 Bayview Avenue — one civic number, one postal code, one set of
+// coordinates, many unrelated tenants distinguished only by a suite that
+// sources drop about half the time.
+//
+// This is what physician-level data looks like. When the CPSO extract lands it
+// will be the dominant shape in the roster, not an edge case: several thousand
+// solo and group practices whose addresses are identical to their neighbours'.
+// Address alone cannot separate them, which is why phone is consulted first.
+// ---------------------------------------------------------------------------
+
+const MOB = { line: "1929 Bayview Avenue", city: "Toronto", postal: "M4G3E8", lat: 43.7135, lng: -79.3721 };
+const tenant = (
+  key: string, source: string, name: string, unit: string | null, phone: string | null,
+): MatchCandidate =>
+  row({
+    key, source, name,
+    addressLine1: MOB.line, addressLine2: unit,
+    city: MOB.city, postal: MOB.postal, phone, lat: MOB.lat, lng: MOB.lng,
+  });
+
+describe("medical office building — one address, many practices", () => {
+  it("merges two listings that share a phone, even across different suites", () => {
+    // The province records the building's suite; the physician register records
+    // the floor. Same line, so it is one front desk.
+    const a = tenant("moh_lio:mob1", "moh_lio", "Bayview Family Practice", "Suite 210", "416-555-0142");
+    const b = tenant("cpso:mob1", "cpso", "Dr. A. Nakamura", "Suite 2A", "(416) 555-0142");
+    const r = scorePair(a, b);
+    expect(r.decision).toBe("merge");
+    expect(r.reasons.join(" ")).toMatch(/same phone number/);
+  });
+
+  it("keeps two tenants apart when suite and phone both differ", () => {
+    const a = tenant("cpso:mob2", "cpso", "Dr. A. Nakamura", "Suite 210", "416-555-0142");
+    const b = tenant("cpso:mob3", "cpso", "Dr. P. Okonkwo", "Suite 305", "416-555-0199");
+    const r = scorePair(a, b);
+    expect(r.decision).toBe("distinct");
+    expect(r.reasons.join(" ")).toMatch(/two practices in one building/);
+  });
+
+  it("does not merge two tenants just because the whole address matches", () => {
+    // The failure this whole section exists to prevent: identical civic number,
+    // postal code and coordinates, and no suite recorded on either side.
+    const a = tenant("cpso:mob4", "cpso", "Dr. A. Nakamura", null, "416-555-0142");
+    const b = tenant("cpso:mob5", "cpso", "Dr. P. Okonkwo", null, "416-555-0199");
+    const r = scorePair(a, b);
+    expect(r.decision).not.toBe("merge");
+    expect(r.signals.phoneEqual).toBe(false);
+  });
+
+  it("sends one address with two phone numbers and no suite to a human", () => {
+    // A main line and a department line for one practice look exactly like two
+    // practices. Nothing available decides it, so nobody pretends otherwise.
+    const a = tenant("moh_lio:mob6", "moh_lio", "Bayview Family Practice", null, "416-555-0142");
+    const b = tenant("cpso:mob7", "cpso", "Bayview Family Practice", null, "416-555-0143");
+    const r = scorePair(a, b);
+    expect(r.decision).toBe("review");
+    expect(r.reasons.join(" ")).toMatch(/no suite to tell them apart/);
+  });
+
+  it("reviews same-organisation suites when no phone is available at all", () => {
+    // Today's data: neither open source has a phone. "Suites 250, 300" is one
+    // practice across a floor; two suites of one org may not be.
+    const a = tenant("moh_lio:mob8", "moh_lio", "Bayview Family Practice", "Suite 250", null);
+    const b = tenant("moh_lio:mob9", "moh_lio", "Bayview Family Practice", "Suite 300", null);
+    const r = scorePair(a, b);
+    expect(r.decision).toBe("review");
+    expect(r.reasons.join(" ")).toMatch(/no phone number on either side/);
+  });
+
+  it("treats unrelated names in different suites as distinct without a phone", () => {
+    const a = tenant("moh_lio:mob10", "moh_lio", "Bayview Family Practice", "Suite 250", null);
+    const b = tenant("moh_lio:mob11", "moh_lio", "East York Dermatology Associates", "Suite 300", null);
+    expect(scorePair(a, b).decision).toBe("distinct");
+  });
+
+  it("a shared phone outranks a name that looks nothing alike", () => {
+    // Practices rebrand and physicians are listed under their own names; the
+    // line they answer is the more reliable identity.
+    const a = tenant("moh_lio:mob12", "moh_lio", "Bayview Family Practice", "Suite 210", "416-555-0142");
+    const b = tenant("cpso:mob13", "cpso", "Dr. A. Nakamura", "Suite 210", "416-555-0142");
+    const r = scorePair(a, b);
+    expect(r.decision).toBe("merge");
+    expect(r.signals.nameSimilarity).toBeLessThan(0.3);
+  });
+
+  it("does not let a shared phone merge across genuinely different places", () => {
+    // A billing or answering service can front several clinics. Location still
+    // has a veto.
+    const a = tenant("cpso:mob14", "cpso", "Dr. A. Nakamura", "Suite 210", "416-555-0142");
+    const b = row({
+      key: "cpso:far", source: "cpso", name: "Dr. A. Nakamura",
+      addressLine1: "500 Queen Street West", city: "Toronto", postal: "M5V2B3",
+      phone: "416-555-0142", lat: 43.6478, lng: -79.4001,
+    });
+    expect(scorePair(a, b).decision).toBe("distinct");
+  });
+
+  it("resolves a whole floor into the right number of practices", () => {
+    const floor = [
+      tenant("cpso:f1", "cpso", "Dr. A. Nakamura", "Suite 210", "416-555-0142"),
+      tenant("moh_lio:f2", "moh_lio", "Bayview Family Practice", "Suite 210", "416-555-0142"),
+      tenant("cpso:f3", "cpso", "Dr. P. Okonkwo", "Suite 305", "416-555-0199"),
+      tenant("cpso:f4", "cpso", "Dr. R. Villanueva", "Suite 410", "416-555-0177"),
+      tenant("cpso:f5", "cpso", "Dr. S. Haddad", "Suite 410", "416-555-0177"),
+    ];
+    const { clusters } = resolveEntities(floor);
+    // Nakamura + the practice listing are one front desk; Villanueva and Haddad
+    // share Suite 410 and a line, so they are one practice with two physicians.
+    expect(clusters).toHaveLength(3);
+    expect(clusters.every((c) => !c.needsReview)).toBe(true);
+  });
+});

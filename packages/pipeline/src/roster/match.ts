@@ -92,6 +92,8 @@ const DIFFERENT_PLACE_KM = 1.0;
 /** How close two same-named addresses must be to read as a relocation. */
 const RELOCATION_KM = 0.5;
 const RELOCATION_NAME_SIMILARITY = 0.8;
+/** Above this, two names are the same organisation rather than two tenants. */
+const SAME_ORG_NAME_SIMILARITY = 0.85;
 
 function decide(score: number): MatchDecision {
   if (score >= MERGE_THRESHOLD) return "merge";
@@ -162,6 +164,54 @@ export function scorePair(a: MatchCandidate, b: MatchCandidate): MatchResult {
 
   const sameStreet = streetNameSimilarity !== null && streetNameSimilarity >= 0.9;
   const sameBuilding = geoDistanceKm !== null && geoDistanceKm <= SAME_BUILDING_KM;
+  const sameCivicAddress = streetNumberEqual === true && sameStreet;
+
+  // ---- Phone, consulted before address.
+  //
+  // A telephone number *is* the front desk — the one thing in the record that a
+  // patient actually uses, and the only field that distinguishes two tenants of
+  // one building. Address cannot do that job: a medical office building gives
+  // thirty unrelated practices the same civic number, the same postal code and
+  // the same coordinates, differing only by a suite that half the sources drop.
+  //
+  // So phone is checked first and, where both sides have one, it decides.
+  const locationCompatible =
+    postalEqual === true ||
+    sameCivicAddress ||
+    sameBuilding ||
+    (geoDistanceKm !== null && geoDistanceKm <= DIFFERENT_PLACE_KM);
+
+  if (phoneEqual === true && locationCompatible) {
+    reasons.push("same phone number at a compatible location");
+    if (unitConflict) {
+      reasons.push(`recorded under different suites (${pa.unit} vs ${pb.unit}) — one front desk`);
+    }
+    const score = Math.min(1, 0.95 + 0.05 * nameSimilarity);
+    return { score, decision: decide(score), signals, reasons };
+  }
+
+  if (phoneEqual === false) {
+    // Two numbers at one address. A suite difference settles it: different
+    // suite *and* different line is two tenants, not one practice recorded
+    // twice. Without a suite we cannot rule out a main line and a department
+    // line for the same front desk, so a human looks.
+    if (sameCivicAddress || sameBuilding) {
+      if (unitConflict) {
+        reasons.push(
+          `different suites (${pa.unit} vs ${pb.unit}) and different phone numbers ` +
+            `— two practices in one building`,
+        );
+        return { score: 0.05, decision: "distinct", signals, reasons };
+      }
+      reasons.push(
+        "same address but different phone numbers, with no suite to tell them apart",
+      );
+      const score = clamp(0.6 + 0.05 * nameSimilarity);
+      return { score, decision: decide(score), signals, reasons };
+    }
+    reasons.push("different phone numbers and no address agreement");
+    return { score: 0.1, decision: "distinct", signals, reasons };
+  }
 
   // ---- Written address agreement, checked before anything geographic.
   //
@@ -184,8 +234,8 @@ export function scorePair(a: MatchCandidate, b: MatchCandidate): MatchResult {
       );
       return { score: 0.75, decision: "review", signals, reasons };
     }
-    if (unitConflict) reasons.push(`different suites (${pa.unit} vs ${pb.unit})`);
-    const score = clamp(0.9 + 0.1 * nameSimilarity - (unitConflict ? 0.08 : 0));
+    if (unitConflict) return suiteVerdict(pa.unit, pb.unit, nameSimilarity, signals, reasons);
+    const score = clamp(0.9 + 0.1 * nameSimilarity);
     return { score, decision: decide(score), signals, reasons };
   }
 
@@ -233,20 +283,7 @@ export function scorePair(a: MatchCandidate, b: MatchCandidate): MatchResult {
     }
   }
 
-  if (phoneEqual === false && streetNumberEqual !== true) {
-    reasons.push("different phone numbers and no address agreement");
-    return { score: 0.1, decision: "distinct", signals, reasons };
-  }
-
-  // ---- Positive evidence.
-
-  // A shared phone number is the strongest single signal we can get: it is
-  // literally the front desk. It only counts alongside location agreement.
-  if (phoneEqual === true && (postalEqual === true || (geoDistanceKm ?? 9) <= DIFFERENT_PLACE_KM)) {
-    reasons.push("same phone number at the same location");
-    const score = Math.min(1, 0.95 + 0.05 * nameSimilarity);
-    return { score, decision: decide(score), signals, reasons };
-  }
+  // ---- Address, where phone was unavailable or inconclusive.
 
   // Civic address agreement where the postal codes are absent or disagree.
   // (The both-agree case returned above.)
@@ -269,11 +306,8 @@ export function scorePair(a: MatchCandidate, b: MatchCandidate): MatchResult {
       return { score, decision: decide(score), signals, reasons };
     }
 
-    const base = 0.9;
-    const nameBonus = 0.1 * nameSimilarity;
-    const unitPenalty = unitConflict ? 0.08 : 0;
-    if (unitConflict) reasons.push(`different suites (${pa.unit} vs ${pb.unit})`);
-    const score = clamp(base + nameBonus - unitPenalty);
+    if (unitConflict) return suiteVerdict(pa.unit, pb.unit, nameSimilarity, signals, reasons);
+    const score = clamp(0.9 + 0.1 * nameSimilarity);
     return { score, decision: decide(score), signals, reasons };
   }
 
@@ -305,6 +339,33 @@ export function scorePair(a: MatchCandidate, b: MatchCandidate): MatchResult {
   reasons.push("no address agreement; name similarity alone is not sufficient");
   const score = clamp(0.3 * nameSimilarity);
   return { score, decision: decide(score), signals, reasons };
+}
+
+/**
+ * Two rows at one civic address in different suites, with no phone to separate
+ * them.
+ *
+ * This is the medical-office-building shape, and it has no clean answer from
+ * address alone. A shared organisation name across two suites is often one
+ * practice spread over a floor ("Suites 250, 300"); two unrelated names is two
+ * tenants. Neither reading is safe to act on automatically, so a strong name
+ * match goes to a human and a weak one is treated as distinct — the direction
+ * that cannot silently erase a practice from the roster.
+ */
+function suiteVerdict(
+  unitA: string | null,
+  unitB: string | null,
+  nameSimilarity: number,
+  signals: MatchSignals,
+  reasons: string[],
+): MatchResult {
+  reasons.push(`different suites (${unitA} vs ${unitB}) and no phone number on either side`);
+  if (nameSimilarity >= SAME_ORG_NAME_SIMILARITY) {
+    reasons.push("same organisation — may be one practice across two suites, or two of its clinics");
+    return { score: 0.78, decision: "review", signals, reasons };
+  }
+  reasons.push("different organisations — treated as two tenants of one building");
+  return { score: 0.2, decision: "distinct", signals, reasons };
 }
 
 function clamp(n: number): number {
