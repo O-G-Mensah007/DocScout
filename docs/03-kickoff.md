@@ -81,6 +81,9 @@ previous week actually found.
   find by hand becomes a fixture in `packages/pipeline/src/eval/fixtures/`.
 - **Week 4 — the audit.** 100 random calls. This is the week that decides
   whether the company is real. Do not skip it and do not let the sample stop
-  being random.
+  being random. Before you report a precision number, read "What the roster
+  covers — and what it does not" in `docs/00-product-spec.md`: the sample is
+  random *within team-based primary care* and random nowhere else, and the
+  roster is biased toward the practices patients can already find.
 - **Week 5 — the surface.** Map, filters, watch signup, correction flow.
 - **Week 6 — publish.** The census report, then launch.
