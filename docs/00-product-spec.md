@@ -62,12 +62,49 @@ The GTA is where physician density is highest and unattachment rates are
 lowest. Beachhead size and problem severity may be anti-correlated. The census
 tests this rather than assuming it.
 
+## What the roster covers — and what it does not
+
+**The roster is team-based primary care only.** This is the single most
+important caveat in the project and it must not be discovered late.
+
+Ontario open data lists roughly **585 FHT, CHC, NPLC and AHAC locations**
+province-wide. Ontario has roughly **17,300 family physicians**. Those numbers
+are not two measures of the same thing, and the gap is not a rounding error —
+it is most of primary care. Solo and group practices (FHO, FHG, and
+unaffiliated physicians) are not funded facilities, appear in no open dataset,
+and are absent from the roster entirely. They exist only in the CPSO Physician
+Register, which we do not crawl — see
+[ADR 0003](adr/0003-roster-sources-and-entity-resolution.md).
+
+**The bias has a direction. The roster is not a small random sample of Ontario
+primary care; it is the most visible slice of it.** Funded team-based
+organisations are precisely the ones that already have a website, a
+communications budget, a public profile, and often a published intake page. The
+practices missing from the roster are disproportionately the ones a patient
+already cannot find — which is the population the product exists to serve.
+
+Two consequences, both of which bite before launch:
+
+1. **Week 4 (the audit).** Precision measured against this roster is precision
+   on the *findable* half of primary care. The sample is random within
+   team-based primary care and random nowhere else. Report it that way. A
+   health-system analyst who takes an 85% precision figure as applying to
+   Ontario primary care generally will be wrong, and will notice.
+2. **Week 6 (the census).** The report covers team-based primary care only, and
+   **the title has to say so** — not a footnote, not a methodology appendix.
+   Something of the form "*... in Ontario's team-based primary care*". A census
+   that silently implies province-wide coverage is the kind of error that
+   destroys credibility with exactly the buyer we need, and it is unrecoverable
+   once published.
+
+Closing the gap is a data-access decision (CPSO), not an engineering one.
+
 ## Success criteria for v1
 
 | Metric | Target | Notes |
 | --- | --- | --- |
 | Precision | > 85% | Of actionable claims, share confirmed by phone on a **random** sample |
-| Coverage | > 80% | Share of rostered practices with a status that is not `unknown` |
+| Coverage | > 80% | Share of **rostered** practices with a status that is not `unknown`. The denominator is team-based primary care only — see above |
 | Freshness | < 14d median | Age of verified status across the index |
 | Discovery rate | measure it | Openings per 1,000 practices per month. Nobody knows this number |
 | Watch conversion | measure it | Alert → contact → self-reported attachment |
