@@ -101,6 +101,23 @@ These are real, and they constrain week 2. None is a bug.
    585 such locations in total, so three catchments cannot reach 300 from this
    source. It is not a bounds or matcher problem.
 
+## How a practice is identified
+
+In priority order:
+
+1. **Telephone number.** Where two rows both carry one, it settles the match —
+   the same line at a compatible location is one front desk, and two lines in
+   two suites are two practices. Location keeps a veto: a shared answering
+   service does not merge clinics a kilometre apart.
+2. **Written address**, then postal code. Beats a disagreeing geocode.
+3. **Name**, only ever as corroboration. Sibling sites of one organisation share
+   a name almost exactly, so a name-led matcher merges them and deletes
+   practices from the roster.
+
+Neither open source carries a phone number yet, so (1) is mostly dormant today
+and (2) does the work. That changes the moment physician-level data lands, where
+most practices share an address with several neighbours.
+
 ## Changing the matcher
 
 `packages/pipeline/src/roster/match.ts` is pure — no clock, no network, no
