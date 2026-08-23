@@ -2,46 +2,27 @@
  * Layer 2 — evidence. Snapshot what practices already publish.
  * Usage: pnpm crawl -- --catchment toronto-east [--limit 25]
  */
-import { and, eq, isNull } from "drizzle-orm";
-import { db, practices, snapshots } from "@docscout/db";
-import { candidateUrls, fetchPage } from "../crawl/fetcher";
+import { crawlCatchment } from "../pipeline";
 import { arg } from "./args";
 
 async function main(): Promise<void> {
   const catchment = arg("catchment");
   const limit = Number(arg("limit", "50"));
 
-  const rows = await db()
-    .select()
-    .from(practices)
-    .where(and(eq(practices.catchment, catchment), isNull(practices.delistedAt)))
-    .limit(limit);
+  console.log(`Crawling up to ${limit} practices in "${catchment}"`);
 
-  console.log(`Crawling ${rows.length} practices in "${catchment}"`);
+  const stats = await crawlCatchment({
+    catchment,
+    limit,
+    onProgress: (name, url) => console.log(`  snapshot: ${name} — ${url}`),
+  });
 
-  for (const p of rows) {
-    if (p.crawlBlocked || !p.websiteUrl) continue;
-
-    for (const url of candidateUrls(p.websiteUrl)) {
-      const out = await fetchPage(url);
-      if (!out.ok) {
-        if (out.reason === "robots") console.log(`  skip (robots): ${url}`);
-        continue;
-      }
-
-      await db().insert(snapshots).values({
-        practiceId: p.id,
-        sourceUrl: out.url,
-        sourceType: "practice_website",
-        httpStatus: out.httpStatus,
-        contentHash: out.contentHash,
-        body: out.text,
-      });
-      console.log(`  snapshot: ${out.url}`);
-    }
-  }
-
-  console.log("Done. Next: pnpm extract -- --catchment " + catchment);
+  console.log(
+    `\nDone. ${stats.snapshotsSaved} snapshots saved, ` +
+      `${stats.skippedUnchanged} unchanged, ${stats.skippedRobots} blocked by robots.txt` +
+      (stats.errors > 0 ? `, ${stats.errors} errors` : ""),
+  );
+  console.log("Next: pnpm extract -- --catchment " + catchment);
 }
 
 main().catch((e) => {

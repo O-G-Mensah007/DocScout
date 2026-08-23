@@ -12,3 +12,4 @@ export * from "./roster/sources/moh-lio";
 export * from "./roster/sources/odhf";
 export * from "./roster/sources/cpso";
 export * from "./roster/sources/afhto";
+export * from "./pipeline";

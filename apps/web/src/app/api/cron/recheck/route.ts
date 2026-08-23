@@ -1,4 +1,5 @@
 import { isAuthorizedCron, unauthorized } from "@/lib/cron-auth";
+import { extractCatchment, practicesDueForRecheck } from "@docscout/pipeline/pipeline";
 
 export const maxDuration = 300;
 
@@ -9,5 +10,22 @@ export const maxDuration = 300;
  */
 export async function GET(req: Request): Promise<Response> {
   if (!isAuthorizedCron(req)) return unauthorized();
-  return Response.json({ ok: true, ran: "recheck", at: new Date().toISOString() });
+
+  const catchments = await practicesDueForRecheck(200);
+  const results: Record<string, { observations: number; disputed: number }> = {};
+
+  for (const catchment of catchments) {
+    const stats = await extractCatchment({ catchment, limit: 50 });
+    results[catchment] = {
+      observations: stats.observationsSaved,
+      disputed: stats.disputed,
+    };
+  }
+
+  return Response.json({
+    ok: true,
+    ran: "recheck",
+    catchments: results,
+    at: new Date().toISOString(),
+  });
 }
