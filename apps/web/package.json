@@ -12,6 +12,7 @@
   "dependencies": {
     "@docscout/core": "workspace:*",
     "@docscout/db": "workspace:*",
+    "@docscout/pipeline": "workspace:*",
     "drizzle-orm": "^0.38.2",
     "next": "^15.1.0",
     "react": "^19.0.0",

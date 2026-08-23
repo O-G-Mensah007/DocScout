@@ -5,14 +5,18 @@
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./pipeline": "./src/pipeline.ts"
+  },
   "scripts": {
     "typecheck": "tsc --build",
     "roster:load": "tsx src/cli/roster-load.ts",
     "crawl": "tsx src/cli/crawl.ts",
     "extract": "tsx src/cli/extract.ts",
     "audit:export": "tsx src/cli/audit-export.ts",
-    "eval": "tsx src/eval/run.ts"
+    "eval": "tsx src/eval/run.ts",
+    "verify": "tsx src/cli/verify.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
