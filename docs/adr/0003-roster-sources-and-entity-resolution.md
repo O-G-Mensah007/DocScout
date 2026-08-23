@@ -96,8 +96,28 @@ Location is the spine of every decision and name is corroboration only. The
 reverse — weighting names — merges sibling sites and quietly deletes practices,
 because an FHT's satellites share a name almost exactly.
 
-Three rules carry most of the weight, and each was derived from a real failure
-against real rows:
+**Phone is consulted before address.** A telephone number *is* the front desk:
+it is the field a patient actually uses, and the only one that separates two
+tenants of one building. Address cannot do that job — a medical office building
+gives thirty unrelated practices the same civic number, postal code and
+coordinates, differing only by a suite that sources drop about half the time.
+So where both sides carry a number, it decides:
+
+| Phone | Location | Outcome |
+| --- | --- | --- |
+| same | compatible | merge, whatever the names say |
+| same | > 1 km apart | distinct — an answering service can front several clinics |
+| differs | same address, different suites | distinct: two tenants |
+| differs | same address, no suite recorded | **review** — a main line and a department line look identical to this |
+| absent | same address, different suites | review if one organisation, distinct if two |
+
+Neither open source publishes a telephone number today, so this path is mostly
+dormant. It will not stay dormant: physician-level data is overwhelmingly
+solo and group practices at shared addresses, and that is the shape the matcher
+has to be right about before the CPSO extract arrives, not after.
+
+Three further rules carry most of the weight, and each was derived from a real
+failure against real rows:
 
 - **Written address beats geocode.** A Canadian postal code is
   building-precise. ODHF places `629 markham rd unit 2, M1H 2A4` 2.4 km from
