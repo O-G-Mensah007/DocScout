@@ -45,7 +45,11 @@ export default function BotPage() {
         <a href="https://www.statcan.gc.ca/en/lode/databases/odhf">
           Open Database of Healthcare Facilities
         </a>
-        . Neither Ontario nor Statistics Canada endorses Doc-Scout.
+        , and enriched with contact information from the{" "}
+        <a href="https://www.afhto.ca/find-a-team">
+          Association of Family Health Teams of Ontario
+        </a>
+        . Neither Ontario, Statistics Canada, nor AFHTO endorses Doc-Scout.
       </p>
       <p>
         We do not scrape the CPSO Physician Register. Where we need physician practice details,

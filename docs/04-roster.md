@@ -32,6 +32,7 @@ The run exits non-zero if the `needs_review` rate exceeds 10%.
 | 1 | Ontario MOH service provider locations (LIO, ESRI REST) | Creates practices | Yes, every run |
 | 2 | StatCan ODHF v1.1 | Enriches only — never creates a practice | Yes, every run |
 | 3 | CPSO Physician Register | **Not automated.** See below | No |
+| 4 | AFHTO Find A Team | Enriches with phone + website — never creates | Yes, every run |
 
 ### The CPSO position, in short
 
@@ -48,10 +49,14 @@ Read the ADR before changing this. The reasoning is not about robots.txt.
 
 ## Catchments
 
-A catchment is a bounding box **and** a postal allowlist; a row must satisfy
-both. Either rule alone is wrong: boxes are crude at municipal edges, and rural
-forward sortation areas are enormous — `N0B` spans Wellesley, Elmira *and*
-Erin; `P0L` runs from Hearst to Moose Factory.
+A catchment is a bounding box and, when a postal code is available, a postal
+allowlist; a row with both must satisfy both. When a source has a geocode but
+no postal (AFHTO), the bounding box alone is sufficient — the FSA filter
+catches geocoding errors in sources that report both, not excludes sources
+that only have one. Either rule alone is wrong for sources that carry both:
+boxes are crude at municipal edges, and rural forward sortation areas are
+enormous — `N0B` spans Wellesley, Elmira *and* Erin; `P0L` runs from Hearst
+to Moose Factory.
 
 | Slug | Area | Practices |
 | --- | --- | --- |
@@ -64,13 +69,13 @@ Edit them in `packages/pipeline/src/roster/catchments.ts`.
 ## Reading the report
 
 ```
-  candidates           43      rows from all sources, inside the catchment
-  pairs compared        9      after blocking; the quadratic cost avoided
-  clusters             38      distinct entities found
-  multi-source          5      clusters built from more than one source
+  candidates           71      rows from all sources, inside the catchment
+  pairs compared       34      after blocking; the quadratic cost avoided
+  clusters             50      distinct entities found
+  multi-source         16      clusters built from more than one source
   practices            32      what would be written
-  cross-check only      6      ODHF rows matching nothing — not loaded
-  stale addresses       2      ODHF lists a loaded practice elsewhere — advisory
+  cross-check only     18      enrichment-only rows matching nothing — not loaded
+  stale addresses       5      enrichment source lists a loaded practice elsewhere — advisory
 
   needs_review          0      (0.0% of practices)
 ```
@@ -81,8 +86,9 @@ practice. It does not count disagreements with the cross-check source, because
 those cannot change the roster; those are the `stale addresses` line, and they
 appear in `review_reasons` without setting the flag.
 
-**`cross-check only`** is a coverage signal, not an error. It is usually an
-organisation that has moved or closed since 2019–20.
+**`cross-check only`** is a coverage signal, not an error. For ODHF it is
+usually an organisation that has moved or closed since 2019–20. For AFHTO it
+is usually a name or address variant the matcher could not safely resolve.
 
 Inspect anything unresolved with `--review`. Nothing in that bucket has been
 merged; that is the point of it.
@@ -91,9 +97,13 @@ merged; that is the point of it.
 
 These are real, and they constrain week 2. None is a bug.
 
-1. **No telephone numbers, no websites.** Neither open source publishes them.
-   Layer 2 crawls practice websites; with no URL it has nothing to crawl.
-   Resolving this is the first task after the CPSO decision.
+1. **Partial telephone numbers, partial websites.** AFHTO provides phone (100%)
+   and website (99%) for the teams it lists. After entity resolution, roughly
+   half of practices in each catchment now carry both fields. The remainder are
+   MOH records that AFHTO did not match — usually because the AFHTO listing
+   uses a name or address variant the matcher scored below the merge threshold.
+   Layer 2 crawls practice websites; practices with no URL route to the human
+   phone queue.
 2. **No solo or group family practices.** FHO/FHG physicians are the majority
    of Ontario primary care and appear in no open dataset — only in the CPSO
    register. The roster today is funded team-based primary care only.
@@ -114,9 +124,9 @@ In priority order:
    a name almost exactly, so a name-led matcher merges them and deletes
    practices from the roster.
 
-Neither open source carries a phone number yet, so (1) is mostly dormant today
-and (2) does the work. That changes the moment physician-level data lands, where
-most practices share an address with several neighbours.
+AFHTO provides phone numbers for most team-based practices, so (1) is now
+active for cross-source matching. It will become critical when physician-level
+data lands, where most practices share an address with several neighbours.
 
 ## Changing the matcher
 

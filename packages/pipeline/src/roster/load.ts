@@ -15,6 +15,7 @@ import { normalizePostal, titleCase } from "./normalize";
 import { fetchMohLio } from "./sources/moh-lio";
 import { fetchOdhf } from "./sources/odhf";
 import { loadCpsoExtract } from "./sources/cpso";
+import { fetchAfhto } from "./sources/afhto";
 import { SOURCE_RANK } from "./sources/types";
 import type { RosterCandidate, RosterSource } from "./sources/types";
 
@@ -137,6 +138,17 @@ export async function buildRoster(opts: LoadOptions): Promise<LoadResult> {
     fetched.cpso = cpso.candidates.length;
     if (cpso.skippedReason) skipped.push(cpso.skippedReason);
     all.push(...cpso.candidates);
+
+    if (opts.withCrossCheck !== false) {
+      const afhto = await fetchAfhto({
+        ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}),
+        ...(opts.userAgent ? { userAgent: opts.userAgent } : {}),
+      });
+      fetched.afhto = afhto.length;
+      all.push(...afhto);
+    } else {
+      fetched.afhto = 0;
+    }
   }
 
   // ---- Catchment filter.
@@ -160,15 +172,12 @@ export async function buildRoster(opts: LoadOptions): Promise<LoadResult> {
     const primary = ranked[0];
     if (!primary) continue;
 
-    // Invariant of this layer: the cross-check never creates a practice. A
-    // lone ODHF row means 2019-20 listed something the province no longer
-    // does — worth counting, not worth publishing as current.
-    if (primary.source === "statcan_odhf") {
+    if (primary.source === "statcan_odhf" || primary.source === "afhto") {
       unmatchedCrossCheck++;
       dropped.push({
         key: primary.key,
         name: primary.name,
-        reason: "cross-check-only source with no authoritative match",
+        reason: "enrichment-only source with no authoritative match",
       });
       continue;
     }
@@ -249,11 +258,13 @@ export async function buildRoster(opts: LoadOptions): Promise<LoadResult> {
 }
 
 /**
- * True when a candidate comes from a source that may only corroborate an
- * existing practice, never create one. Today that is the StatCan cross-check.
+ * True when a candidate comes from a source that may only enrich an existing
+ * practice, never create one. StatCan ODHF is a cross-check; AFHTO is an
+ * enrichment source for phone and website.
  */
 function isCrossCheckOnly(key: string, byKey: Map<string, RosterCandidate>): boolean {
-  return byKey.get(key)?.source === "statcan_odhf";
+  const source = byKey.get(key)?.source;
+  return source === "statcan_odhf" || source === "afhto";
 }
 
 /** First non-null value in trust order. */

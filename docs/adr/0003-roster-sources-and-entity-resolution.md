@@ -1,6 +1,6 @@
 # ADR 0003 — Roster sources and entity resolution
 
-**Status:** accepted (sources 1 and 2) · **open question** (source 3, CPSO) · 2026-08-20
+**Status:** accepted (sources 1, 2, 4) · **open question** (source 3, CPSO) · 2026-08-20
 
 ## Context
 
@@ -78,6 +78,34 @@ eligible; the intended revenue model sells capacity intelligence to Ontario
 Health Teams, which may read as commercial. Only the founders can characterise
 that, and the honest move is to ask CPSO rather than to infer.
 
+### 4. AFHTO Find A Team — accepted, enrichment only
+
+`https://www.afhto.ca/find-a-team`
+
+The Association of Family Health Teams of Ontario publishes a directory of all
+team-based primary care organisations. The page embeds a JSON array in a
+`data-locations` attribute on the map element: each entry carries lat/lng,
+title, type, and an HTML `description` containing address, municipality, phone,
+and (usually) website URL.
+
+328 teams as of 2026-08-22. Coverage: 100% phone, 99% website, 100% address,
+100% geocoded. This is the only open source that publishes both phone and
+website for team-based primary care.
+
+Like ODHF, AFHTO **never creates a practice** — it enriches existing MOH
+records with phone and website via entity resolution. A lone AFHTO row that
+matches nothing is reported, not loaded. Its data is not independent of the
+MOH layer (both list the same funded organisations), but it carries fields the
+MOH layer does not.
+
+No postal codes. Catchment filtering uses the geocode alone when no postal is
+available — the FSA filter exists to catch geocoding errors in sources that
+report both, not to exclude sources that only have one.
+
+Municipality is stored as a numeric code in ~72% of entries. The adapter
+returns null for those and relies on entity resolution to pick up the city
+from the MOH record.
+
 ## Decision
 
 1. Fetch source 1 live on every run. It is the only source that creates practices.
@@ -86,6 +114,8 @@ that, and the honest move is to ask CPSO rather than to infer.
    human obtained through the official request (`CPSO_REGISTER_EXTRACT_PATH`)
    and no-ops with a printed explanation when that variable is unset — which is
    the state this repository ships in.
+4. Use source 4 (AFHTO) as an enrichment source for phone and website. It can
+   attach to an existing practice but never create one.
 4. Resolve to the **practice**, meaning the front desk a patient contacts, not
    the organisation and not the physician.
 

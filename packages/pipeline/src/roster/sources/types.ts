@@ -5,6 +5,7 @@ export const SOURCE_RANK = {
   moh_lio: 1,
   statcan_odhf: 2,
   cpso: 3,
+  afhto: 4,
 } as const;
 
 export type RosterSource = keyof typeof SOURCE_RANK;

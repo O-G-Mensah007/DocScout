@@ -89,7 +89,13 @@ export function getCatchment(slug: string): Catchment {
   return c;
 }
 
-/** True when a point and postal code both fall inside the catchment. */
+/**
+ * True when a candidate falls inside the catchment. Requires a geocode inside
+ * the bounding box. When a postal code is available, the FSA must also match
+ * the allowlist; when no postal is available (AFHTO, for example), the bbox
+ * alone is sufficient — the FSA filter exists to catch geocoding errors in
+ * sources that report both, not to exclude sources that only have one.
+ */
 export function inCatchment(
   c: Catchment,
   point: { lat: number | null; lng: number | null; postal: string | null },
@@ -101,6 +107,7 @@ export function inCatchment(
     lat >= bbox.minLat && lat <= bbox.maxLat && lng >= bbox.minLng && lng <= bbox.maxLng;
   if (!inBox) return false;
   if (c.fsaPrefixes.length === 0) return true;
-  const fsa = (point.postal ?? "").toUpperCase().replace(/\s/g, "").slice(0, 3);
+  if (point.postal === null || point.postal.trim() === "") return true;
+  const fsa = point.postal.toUpperCase().replace(/\s/g, "").slice(0, 3);
   return c.fsaPrefixes.includes(fsa);
 }
